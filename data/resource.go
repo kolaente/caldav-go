@@ -207,13 +207,24 @@ func (r *Resource) GetPropertyParamValue(paramPath ...string) string {
 }
 
 // GetEtag returns the ETag of the resource and a flag saying if the ETag is present.
-// For collection resource, it returns an empty string and false.
+// The adapter's CalculateEtag() decides whether to return an etag for collections.
 func (r *Resource) GetEtag() (string, bool) {
-	if r.IsCollection() {
+	etag := r.adapter.CalculateEtag()
+	return etag, etag != ""
+}
+
+// GetSyncToken returns a sync-token for collection resources (RFC 6578 §4).
+// The token is an opaque data: URI derived from the adapter's etag.
+// For non-collection resources, it returns an empty string and false.
+func (r *Resource) GetSyncToken() (string, bool) {
+	if !r.IsCollection() {
 		return "", false
 	}
-
-	return r.adapter.CalculateEtag(), true
+	etag := r.adapter.CalculateEtag()
+	if etag == "" {
+		return "", false
+	}
+	return "data:," + etag, true
 }
 
 // GetContentType returns the type of the content of the resource.
