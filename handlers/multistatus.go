@@ -98,6 +98,8 @@ func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
 			pvalue.Content, pfound = resource.GetOwnerPath()
 		case ixml.GET_CTAG_TG:
 			pvalue.Content, pfound = resource.GetEtag()
+		case ixml.SYNC_TOKEN_TG:
+			pvalue.Content, pfound = resource.GetSyncToken()
 		case ixml.PRINCIPAL_URL_TG,
 			ixml.PRINCIPAL_COLLECTION_SET_TG,
 			ixml.CALENDAR_USER_ADDRESS_SET_TG,

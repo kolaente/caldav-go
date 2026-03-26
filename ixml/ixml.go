@@ -44,6 +44,7 @@ var (
 	RESOURCE_TYPE_TG                    = xml.Name{DAV_NS, "resourcetype"}
 	STATUS_TG                           = xml.Name{DAV_NS, "status"}
 	SUPPORTED_CALENDAR_COMPONENT_SET_TG = xml.Name{CALDAV_NS, "supported-calendar-component-set"}
+	SYNC_TOKEN_TG                       = xml.Name{DAV_NS, "sync-token"}
 )
 
 // Namespaces returns the default XML namespaces in for CalDAV contents.
