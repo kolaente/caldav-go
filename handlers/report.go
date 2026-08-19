@@ -45,7 +45,9 @@ func (rh reportHandler) Handle() *Response {
 	}
 
 	multistatus := &multistatusResp{
-		Minimal: rh.headers.IsMinimal(),
+		Minimal:             rh.headers.IsMinimal(),
+		user:                rh.user,
+		supportedComponents: rh.supportedComponents,
 	}
 	// for each href, build the multistatus responses
 	for _, r := range resourcesToReport {

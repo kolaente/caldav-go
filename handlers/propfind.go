@@ -27,7 +27,9 @@ func (ph propfindHandler) Handle() *Response {
 	xml.Unmarshal([]byte(ph.requestBody), &requestXML)
 
 	multistatus := &multistatusResp{
-		Minimal: ph.headers.IsMinimal(),
+		Minimal:             ph.headers.IsMinimal(),
+		user:                ph.user,
+		supportedComponents: ph.supportedComponents,
 	}
 	// for each href, build the multistatus responses
 	for _, resource := range resources {
