@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"encoding/xml"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/samedi/caldav-go/ixml"
@@ -236,4 +239,65 @@ func TestHandle4(t *testing.T) {
 	if test.AssertInt(len(resp.Header["Preference-Applied"]), 1, t) {
 		test.AssertStr(resp.Header.Get("Preference-Applied"), "return=minimal", t)
 	}
+}
+
+// Test: the hrefs requested in a calendar-multiget body are echoed back in the
+// response, so they must not be able to break out of the <D:href> node.
+func TestHandleEscapesRequestedHrefs(t *testing.T) {
+	stg := test.NewFakeStorage()
+	stg.AddFakeResource("/test-data/report/", "123-456-789.ics", "BEGIN:VEVENT\nSUMMARY:Party\nEND:VEVENT")
+
+	injected := `/test-data/report/x</D:href><INJECTED/><D:href>.ics`
+
+	handler := reportHandler{
+		handlerData{
+			requestPath: "/test-data/report/",
+			requestBody: `
+			<?xml version="1.0" encoding="UTF-8"?>
+			<C:calendar-multiget xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+				<D:prop>
+					<D:getetag/>
+				</D:prop>
+				<D:href>/test-data/report/x&lt;/D:href&gt;&lt;INJECTED/&gt;&lt;D:href&gt;.ics</D:href>
+			</C:calendar-multiget>
+			`,
+			response: NewResponse(),
+			storage:  stg,
+		},
+	}
+
+	body := handler.Handle().Body
+
+	if strings.Contains(body, "<INJECTED/>") {
+		t.Fatalf("injected markup escaped the href node: %q", body)
+	}
+
+	hrefs := []string{}
+	decoder := xml.NewDecoder(strings.NewReader(body))
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			t.Fatalf("could not parse response body %q: %v", body, err)
+		}
+
+		start, ok := token.(xml.StartElement)
+		if !ok || start.Name != ixml.HREF_TG {
+			continue
+		}
+
+		var content string
+		if err := decoder.DecodeElement(&content, &start); err != nil {
+			t.Fatalf("could not decode <D:href> in %q: %v", body, err)
+		}
+
+		hrefs = append(hrefs, content)
+	}
+
+	if len(hrefs) != 1 {
+		t.Fatalf("expected 1 href, got %d: %v", len(hrefs), hrefs)
+	}
+
+	test.AssertStr(hrefs[0], injected, t)
 }
