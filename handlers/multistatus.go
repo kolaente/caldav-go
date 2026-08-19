@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"github.com/samedi/caldav-go/data"
-	"github.com/samedi/caldav-go/global"
 	"github.com/samedi/caldav-go/ixml"
 	"github.com/samedi/caldav-go/lib"
 	"net/http"
@@ -19,6 +18,10 @@ type multistatusResp struct {
 	// Flag that XML should be minimal or not
 	// [defined in the draft https://tools.ietf.org/html/draft-murchison-webdav-prefer-05]
 	Minimal bool
+	// The user and supported components of the request being answered. They come from the
+	// request's `Config`, so that no globals are read while rendering the response.
+	user                *data.CalUser
+	supportedComponents []string
 }
 
 type msResponse struct {
@@ -117,13 +120,13 @@ func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
 				pvalue.Content, pfound = "", true
 			}
 		case ixml.CURRENT_USER_PRINCIPAL_TG:
-			if global.User != nil {
-				path := fmt.Sprintf("/%s/", global.User.Name)
+			if ms.user != nil {
+				path := fmt.Sprintf("/%s/", ms.user.Name)
 				pvalue.Content, pfound = ixml.HrefTag(path), true
 			}
 		case ixml.SUPPORTED_CALENDAR_COMPONENT_SET_TG:
 			if resource.IsCollection() {
-				for _, component := range global.SupportedComponents {
+				for _, component := range ms.supportedComponents {
 					// TODO: use ixml somehow to build the below tag
 					compTag := fmt.Sprintf(`<C:comp name="%s"/>`, component)
 					pvalue.Contents = append(pvalue.Contents, compTag)
