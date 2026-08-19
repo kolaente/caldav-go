@@ -74,9 +74,11 @@ func Tag(xmlName xml.Name, content string) string {
 	}
 }
 
-// HrefTag returns a DAV <D:href> tag with the given href path.
+// HrefTag returns a DAV <D:href> tag with the given href path. The path is escaped, as
+// it can contain client-supplied data. `Tag` cannot escape it, since most of its callers
+// pass content that is already XML.
 func HrefTag(href string) (tag string) {
-	return Tag(HREF_TG, href)
+	return Tag(HREF_TG, EscapeText(href))
 }
 
 // StatusTag returns a DAV <D:status> tag with the given HTTP status. The
