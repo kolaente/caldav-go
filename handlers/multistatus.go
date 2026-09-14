@@ -110,7 +110,11 @@ func (ms *multistatusResp) Propstats(resource *data.Resource, reqprops []xml.Nam
 			pvalue.Content, pfound = ixml.HrefTag(resource.Path), true
 		case ixml.RESOURCE_TYPE_TG:
 			if resource.IsCollection() {
-				pvalue.Content, pfound = ixml.Tag(ixml.COLLECTION_TG, "")+ixml.Tag(ixml.CALENDAR_TG, ""), true
+				pvalue.Content, pfound = ixml.Tag(ixml.COLLECTION_TG, ""), true
+
+				if resource.IsCalendar() {
+					pvalue.Content += ixml.Tag(ixml.CALENDAR_TG, "")
+				}
 
 				if resource.IsPrincipal() {
 					pvalue.Content += ixml.Tag(ixml.PRINCIPAL_TG, "")

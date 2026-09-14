@@ -43,6 +43,12 @@ type ResourceAdapter interface {
 	GetModTime() time.Time
 }
 
+// CalendarResourceAdapter can optionally be implemented by a `ResourceAdapter` to tell whether its
+// collection is a calendar. Collections without it are calendars.
+type CalendarResourceAdapter interface {
+	IsCalendar() bool
+}
+
 // ResourceRecurrence represents a recurrence for a resource.
 // NOTE: recurrences are not supported yet.
 type ResourceRecurrence struct {
@@ -81,6 +87,20 @@ func NewResource(rawPath string, adp ResourceAdapter) Resource {
 // IsCollection tells whether a resource is a collection or not.
 func (r *Resource) IsCollection() bool {
 	return r.adapter.IsCollection()
+}
+
+// IsCalendar tells whether a resource is a calendar collection. A collection that only
+// holds calendars, like a calendar home set, is not one.
+func (r *Resource) IsCalendar() bool {
+	if !r.IsCollection() {
+		return false
+	}
+
+	if adp, ok := r.adapter.(CalendarResourceAdapter); ok {
+		return adp.IsCalendar()
+	}
+
+	return true
 }
 
 // IsPrincipal tells whether a resource is the principal resource or not.
