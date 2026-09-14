@@ -14,18 +14,25 @@ import (
 // it does not touch the file system nor the globals, so several independent storages can be used
 // at the same time (which is needed, for example, to test concurrent requests).
 func NewMemoryStorage() *MemoryStorage {
-	return &MemoryStorage{resources: make(map[string]string)}
+	return &MemoryStorage{resources: make(map[string]string), nonCalendars: make(map[string]bool)}
 }
 
 type MemoryStorage struct {
 	// resource path -> resource content. Paths ending with a "/" are collections.
-	resources map[string]string
+	resources    map[string]string
+	nonCalendars map[string]bool
 }
 
 // AddResource adds a resource with the given content to the storage. Paths ending
 // with a "/" are added as collections.
 func (s *MemoryStorage) AddResource(path, content string) {
 	s.resources[path] = content
+}
+
+// AddNonCalendarCollection adds a collection that is not a calendar, like a calendar home set.
+func (s *MemoryStorage) AddNonCalendarCollection(path string) {
+	s.resources[path] = ""
+	s.nonCalendars[path] = true
 }
 
 func (s *MemoryStorage) GetResources(rpath string, withChildren bool) ([]data.Resource, error) {
@@ -119,7 +126,7 @@ func (s *MemoryStorage) DeleteResource(rpath string) error {
 }
 
 func (s *MemoryStorage) newResource(rpath, content string) data.Resource {
-	return data.NewResource(rpath, memoryResourceAdapter{content, isCollectionPath(rpath)})
+	return data.NewResource(rpath, memoryResourceAdapter{content, isCollectionPath(rpath), !s.nonCalendars[rpath]})
 }
 
 // Returns the direct children paths of the collection in `rpath`, sorted to keep the results stable.
@@ -152,10 +159,15 @@ func isCollectionPath(path string) bool {
 type memoryResourceAdapter struct {
 	content    string
 	collection bool
+	calendar   bool
 }
 
 func (a memoryResourceAdapter) IsCollection() bool {
 	return a.collection
+}
+
+func (a memoryResourceAdapter) IsCalendar() bool {
+	return a.calendar
 }
 
 func (a memoryResourceAdapter) CalculateEtag() string {
